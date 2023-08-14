@@ -54,11 +54,20 @@ def create_event(start_time, end_time):
 
 def main():
     while True:
-        action = input("Enter 's' to start time, 'e' to end time or 'q' to quit: ").strip().lower()
+        action = input("Enter 's' to start time, 't' to see session length,"
+                       " 'e' to end time or 'q' to quit: ").strip().lower()
 
         if action == "s":
             start_time = dt.datetime.now()
             print(f"Started at {start_time}")
+
+        elif action == "t":
+            if 'start_time' in locals():
+                time_elapsed = dt.datetime.now() - start_time
+                time_in_minutes = int(time_elapsed.total_seconds() / 60)
+                print(f"Session: {time_in_minutes} minutes")
+            else:
+                print("Please start the time first!")
 
         elif action == "e":
             if 'start_time' in locals():
