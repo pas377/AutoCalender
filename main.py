@@ -52,10 +52,44 @@ def create_event(start_time, end_time):
     except HttpError as error:
         print("An Error Occurred:", error)
 
+def sanitize_datetime_string(datetime_string):
+    if datetime_string.endswith(":00"):
+        return datetime_string
+    if datetime_string[-3] == ":":
+        return datetime_string[:-2] + "0" + datetime_string[-2:]
+    return datetime_string
+
+def fetch_coding_time_for_today():
+    today = dt.datetime.now().date()
+    start_time = dt.datetime(today.year, today.month, today.day, 0, 0, 0)
+    end_time = start_time + dt.timedelta(days=1)
+
+    creds = get_credentials()
+    service = build("calendar", "v3", credentials=creds)
+
+    try:
+        events = service.events().list(calendarId="primary", timeMin=start_time.isoformat() + "Z",
+                                       timeMax=end_time.isoformat() + "Z", singleEvents=True,
+                                       orderBy="startTime").execute().get('items', [])
+
+        total_time = dt.timedelta()
+        for event in events:
+            if event['summary'] == "Coding":
+                event_start = dt.datetime.fromisoformat(sanitize_datetime_string(event['start']['dateTime']))
+                event_end = dt.datetime.fromisoformat(sanitize_datetime_string(event['end']['dateTime']))
+                total_time += event_end - event_start
+
+        hours, remainder = divmod(total_time.seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        print(f"Total coding time for today: {hours} hours, {minutes} minutes")
+
+    except HttpError as error:
+        print("An Error Occurred:", error)
+
 def main():
     while True:
-        action = input("Enter 's' to start time, 't' to see session length,"
-                       " 'e' to end time or 'q' to quit: ").strip().lower()
+        action = input("Enter 's' to start time, 't' to see session length, 'e' to end time,"
+                       " 'c' to see total coding time for today or 'q' to quit: ").strip().lower()
 
         if action == "s":
             start_time = dt.datetime.now()
@@ -76,6 +110,9 @@ def main():
                 create_event(start_time, end_time)
             else:
                 print("Please start the time first!")
+
+        elif action == "c":
+            fetch_coding_time_for_today()
 
         elif action == "q":
             break
